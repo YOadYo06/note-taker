@@ -5,7 +5,7 @@
   import { Loader2 } from 'lucide-react'
   import { useEffect, Suspense } from 'react'
 
-  const AuthCallbackInner = () => {
+  const AuthCallbackInner = () => { 
     const router = useRouter()
     const searchParams = useSearchParams()
     const origin = searchParams.get('origin')
