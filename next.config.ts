@@ -1,7 +1,16 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
-  /* config options here */
-};
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      // Prevent server build from trying to include browser-only modules
+      config.resolve.alias.canvas = false
+      config.resolve.alias.encoding = false
+      config.resolve.alias['pdfjs-dist'] = false
+    }
 
-export default nextConfig;
+    return config
+  },
+}
+
+export default nextConfig
