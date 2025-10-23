@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next'
+import path from 'path'
 
 const nextConfig: NextConfig = {
   eslint: {
@@ -6,6 +7,9 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   webpack: (config, { isServer }) => {
+    // ✅ Alias @ to src for imports
+    config.resolve.alias['@'] = path.resolve(__dirname, 'src')
+
     if (isServer) {
       // Prevent server build from trying to include browser-only modules
       config.resolve.alias.canvas = false
