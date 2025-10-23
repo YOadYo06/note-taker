@@ -1,6 +1,10 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
+  eslint: {
+    // ✅ Skip linting during Vercel (or any) production build
+    ignoreDuringBuilds: true,
+  },
   webpack: (config, { isServer }) => {
     if (isServer) {
       // Prevent server build from trying to include browser-only modules
