@@ -61,12 +61,14 @@ const Message = forwardRef<HTMLDivElement, MessageProps>(
               }
             )}>
             {typeof message.text === 'string' ? (
-              <ReactMarkdown
-                className={cn('prose', {
-                  'text-zinc-50': message.isUserMessage,
+              <div
+                className={cn('prose prose-sm max-w-none', {
+                  'text-zinc-50 prose-invert': message.isUserMessage,
                 })}>
-                {message.text}
-              </ReactMarkdown>
+                <ReactMarkdown>
+                  {message.text}
+                </ReactMarkdown>
+              </div>
             ) : (
               message.text
             )}

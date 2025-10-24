@@ -2,6 +2,7 @@ import type { NextConfig } from 'next'
 import path from 'path'
 
 const nextConfig: NextConfig = {
+  
   eslint: {
     // ✅ Skip linting during Vercel (or any) production build
     ignoreDuringBuilds: true,
