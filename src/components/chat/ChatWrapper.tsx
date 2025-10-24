@@ -7,6 +7,7 @@ import { ChevronLeft, Loader2, XCircle } from 'lucide-react'
 import Link from 'next/link'
 import { buttonVariants } from '../ui/button'
 import { ChatContextProvider } from './ChatContext'
+import { PLANS } from '@/config/stripe'
 
 interface ChatWrapperProps {
   fileId: string
@@ -26,7 +27,7 @@ const ChatWrapper = ({
         // ✅ Correct: access status from query.state.data
         refetchInterval: (query) => {
           const status = query.state.data?.status
-          return status === 'SUCCESS' || status === 'FAILED' ? false : 500
+          return status === 'SUCCESS' || status === 'FAILED' ? false : 1000
         },
       }
     )
@@ -84,11 +85,11 @@ const ChatWrapper = ({
                 {isSubscribed ? 'Pro' : 'Free'}
               </span>{' '}
               plan supports up to{' '}
-              {/*isSubscribed
+              {isSubscribed
                 ? PLANS.find((p) => p.name === 'Pro')
                     ?.pagesPerPdf
                 : PLANS.find((p) => p.name === 'Free')
-                    ?.pagesPerPdf*/}{' '}
+                    ?.pagesPerPdf}{' '}
               pages per PDF.
             </p>
             <Link

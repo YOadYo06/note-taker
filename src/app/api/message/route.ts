@@ -51,7 +51,7 @@ const userId = user?.id
   })
 
   const pinecone = await getPineconeClient()
-  const pineconeIndex = pinecone.Index('quill')
+  const pineconeIndex = pinecone.Index('note-taker')
 
   const vectorStore = await PineconeStore.fromExistingIndex(
     embeddings,

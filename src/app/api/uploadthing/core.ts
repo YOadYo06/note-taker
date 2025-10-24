@@ -5,12 +5,15 @@ import {
   type FileRouter,
 } from 'uploadthing/next'
 import { GoogleGenerativeAIEmbeddings } from '@langchain/google-genai'
-import { PDFLoader } from '@langchain/community/document_loaders/fs/pdf'
 import { PineconeStore } from '@langchain/pinecone'
 import { getPineconeClient } from '@/lib/pinecone'
 
 import { getUserSubscriptionPlan } from '@/lib/stripe'
 import { PLANS } from '@/config/stripe'
+import { PDFLoader } from '@langchain/community/document_loaders/fs/pdf'
+
+
+
 
 
 const f = createUploadthing();
@@ -52,7 +55,7 @@ export const ourFileRouter = {
 
             const blob = await response.blob()
 
-            const loader = new PDFLoader(blob)
+            const loader = new PDFLoader(blob);
 
             const pageLevelDocs = await loader.load()
             console.log('Loaded pages:', pageLevelDocs.length)  // <- Add this line
@@ -64,12 +67,20 @@ export const ourFileRouter = {
             const { isSubscribed } = subscriptionPlan
 
             const isProExceeded =
-            pagesAmt >
-            PLANS.find((plan) => plan.name === 'Pro')!.pagesPerPdf
+            pagesAmt > PLANS.find((plan) => plan.name === 'Pro')!.pagesPerPdf
+            console.log("isProExceeded: ", isProExceeded)
+            console.log("Pro : ", PLANS.find((plan) => plan.name === 'Pro')!.pagesPerPdf)
+            console.log()
             const isFreeExceeded =
             pagesAmt >
             PLANS.find((plan) => plan.name === 'Free')!
                 .pagesPerPdf
+
+            console.log("isFreeExceeded: ", isFreeExceeded)
+            console.log("Pro : ", PLANS.find((plan) => plan.name === 'Free')!.pagesPerPdf)
+
+            console.log("isSubscribed" , isSubscribed)
+            console.log()
 
             if (
             (isSubscribed && isProExceeded) ||
@@ -89,11 +100,11 @@ export const ourFileRouter = {
 
             // vectorize and index entire document
             const pinecone = await getPineconeClient()
-            const pineconeIndex = pinecone.Index('quill')
+            const pineconeIndex = pinecone.Index('note-taker')
 
             const embeddings = new GoogleGenerativeAIEmbeddings({
             apiKey: process.env.GEMINI_API_KEY,
-            model: 'text-embedding-001', // Free tier supports this model
+            model: 'text-embedding-004', // Free tier supports this model
             })
             
 
@@ -115,6 +126,7 @@ export const ourFileRouter = {
             },
             })
         } catch (err) {
+            console.log(err)
             await db.file.update({
             data: {
                 uploadStatus: 'FAILED',
