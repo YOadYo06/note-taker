@@ -78,8 +78,8 @@ const userId = user?.id
     take: 6,
   })
 
-  const formattedPrevMessages = prevMessages.map((msg) => ({
-    role: msg.isUserMessage
+const formattedPrevMessages = prevMessages.map((msg: typeof prevMessages[number]) => ({
+      role: msg.isUserMessage
       ? ('user' as const)
       : ('model' as const), // Changed from 'assistant' to 'model' for Gemini
     content: msg.text,
