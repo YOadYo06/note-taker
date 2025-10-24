@@ -87,11 +87,11 @@ const formattedPrevMessages = prevMessages.map((msg: typeof prevMessages[number]
 
   // Build the prompt for Gemini
   const contextText = results.map((r) => r.pageContent).join('\n\n')
-  const conversationHistory = formattedPrevMessages.map((message) => {
-    if (message.role === 'user')
-      return `User: ${message.content}\n`
-    return `Assistant: ${message.content}\n`
-  }).join('')
+const conversationHistory = formattedPrevMessages.map((message: { role: 'user' | 'model'; content: string }) => {
+  if (message.role === 'user')
+    return `User: ${message.content}\n`
+  return `Assistant: ${message.content}\n`
+}).join('')
 
   const prompt = `Use the following pieces of context (or previous conversation if needed) to answer the user's question in markdown format. If you don't know the answer, just say that you don't know, don't try to make up an answer.
 
