@@ -1,5 +1,5 @@
-//import { PrismaClient } from '../generated/prisma'
-import { PrismaClient } from "@/generated/prisma"
+import { PrismaClient } from '../generated/prisma'
+//import { PrismaClient } from "@/generated/prisma"
 
 declare global {
    
