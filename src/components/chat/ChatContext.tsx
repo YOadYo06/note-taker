@@ -197,12 +197,33 @@ export const ChatContextProvider = ({
     },
 
     onError: (_, __, context) => {
-      setMessage(backupMessage.current)
-      utils.getFileMessages.setData(
-        { fileId },
-        { messages: context?.previousMessages ?? [] }
-      )
-    },
+  setMessage(backupMessage.current)
+  utils.getFileMessages.setInfiniteData(
+    { fileId, limit: INFINITE_QUERY_LIMIT },
+    (old) => {
+      if (!old) {
+        return {
+          pages: [],
+          pageParams: [],
+        }
+      }
+
+      const newPages = [...old.pages]
+
+      if (newPages[0]) {
+        newPages[0] = {
+          ...newPages[0],
+          messages: context?.previousMessages ?? [],
+        }
+      }
+
+      return {
+        ...old,
+        pages: newPages,
+      }
+    }
+  )
+},
     onSettled: async () => {
       setIsLoading(false)
 
