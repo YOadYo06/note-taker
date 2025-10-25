@@ -18,17 +18,8 @@ import { PDFLoader } from '@langchain/community/document_loaders/fs/pdf'
 
 const f = createUploadthing();
 
-
-export const ourFileRouter = {
-
-    pdfUploader: f({
-    pdf: {
-      maxFileSize: "4MB",
-      maxFileCount: 1,
-    },
-  })
-    .middleware(async ({ req }) => {
-        const { getUser } = getKindeServerSession()
+const middleware = async () => {
+    const { getUser } = getKindeServerSession()
         const user = await getUser()
 
         if (!user || !user.id) throw new Error('Unauthorized')
@@ -36,10 +27,29 @@ export const ourFileRouter = {
         const subscriptionPlan = await getUserSubscriptionPlan()
 
         return { subscriptionPlan, userId: user.id }
+}
 
+const onUploadComplete = async ({ metadata, file }
+    :{
+        metadata: Awaited<ReturnType<typeof middleware>>
+        file: {
+            key: string,
+            name: string,
+            url: string
+        }
+    }
+) => {
+
+    const isFileExist = await db.file.findFirst({
+        where:  {
+            key: file.key
+        }
     })
-    .onUploadComplete(async ({ metadata, file }) => {
-        const createdFile = await db.file.create({
+
+    if(isFileExist) return
+
+
+    const createdFile = await db.file.create({
             data: {
                 key: file.key,
                 name: file.name,
@@ -136,7 +146,26 @@ export const ourFileRouter = {
             },
             })
         }
-    }),
+}
+
+export const ourFileRouter = {
+
+    freePlanUploader: f({
+    pdf: {
+      maxFileSize: "4MB",
+      maxFileCount: 1,
+    },
+  })
+    .middleware(middleware)
+    .onUploadComplete(onUploadComplete),
+    proPlanUploader: f({
+    pdf: {
+      maxFileSize: "16MB",
+      maxFileCount: 1,
+    },
+  })
+    .middleware(middleware)
+    .onUploadComplete(onUploadComplete),
 } satisfies FileRouter;
 
 export type OurFileRouter = typeof ourFileRouter;
