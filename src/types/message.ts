@@ -9,7 +9,11 @@ type Messages = RouterOutput['getFileMessages']['messages']
 type OmitText = Omit<Messages[number], 'text'>
 
 type ExtendedText = {
-  text: string |  React.ReactElement
+  text: string | React.ReactElement
 }
 
-export type ExtendedMessage = OmitText & ExtendedText
+export type ExtendedMessage = OmitText & ExtendedText & {
+  id: string
+  createdAt: string | Date
+  isUserMessage: boolean
+}

@@ -1,4 +1,5 @@
 'use client'
+import { z } from 'zod'
 
 import { trpc } from '@/app/_trpc/client'
 import UploadButton from './UploadButon'
@@ -21,7 +22,7 @@ const Dashboard = () => {
   const [currentlyDeletingFile, setCurrentlyDeletingFile] =
     useState<string | null>(null)
 
-  const utils = trpc.useContext()
+  const utils = trpc.useUtils()
 
   const { data: files, isLoading } =
     trpc.getUserFiles.useQuery()
@@ -31,8 +32,8 @@ const Dashboard = () => {
       onSuccess: () => {
         utils.getUserFiles.invalidate()
       },
-      onMutate({ id }) {
-        setCurrentlyDeletingFile(id)
+      onMutate( vars ) {
+        if(vars)setCurrentlyDeletingFile(vars.id)
       },
       onSettled() {
         setCurrentlyDeletingFile(null)

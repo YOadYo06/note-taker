@@ -6,6 +6,7 @@ import Message from './Message'
 import { useContext, useEffect, useRef } from 'react'
 import { ChatContext } from './ChatContext'
 import { useIntersection } from '@mantine/hooks'
+import { ExtendedMessage } from '@/types/message'
 
 interface MessagesProps {
   fileId: string
@@ -43,10 +44,19 @@ const Messages = ({ fileId }: MessagesProps) => {
     ),
   }
 
-  const combinedMessages = [
+ /* const combinedMessages = [
     ...(isAiThinking ? [loadingMessage] : []),
     ...(messages ?? []),
   ]
+*/
+  const combinedMessages: ExtendedMessage[] = [
+  ...(isAiThinking ? [loadingMessage] : []),
+  ...(messages?.map(msg => ({
+    ...msg,
+    text: msg.text,
+    createdAt: msg.createdAt,
+  })) ?? []),
+] as ExtendedMessage[]
 
   const lastMessageRef = useRef<HTMLDivElement>(null)
 
