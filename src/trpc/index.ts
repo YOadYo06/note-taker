@@ -221,6 +221,91 @@ export const appRouter = router({
 
       return file
     }),
+    getFlashcardsByFileId: privateProcedure
+    .input(z.object({
+      fileId: z.string()
+    }))
+    .query(async ({ ctx, input }) => {
+      
+      return await db.flashcard.findMany({
+        where: {
+          fileId: input.fileId,
+          userId: ctx.userId, // Ensure user owns the file
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      });
+    }),
+    deleteFlashcard: privateProcedure
+  .input(z.object({ id: z.string() }))
+  .mutation(async ({ ctx, input }) => {
+    const { userId } = ctx
+
+    const flashcard = await db.flashcard.findFirst({
+      where: {
+        id: input.id,
+        userId,
+      },
+    })
+
+    if (!flashcard) throw new TRPCError({ code: 'NOT_FOUND' })
+
+    await db.flashcard.delete({
+      where: {
+        id: input.id,
+      },
+    })
+
+    return flashcard
+  }),
+  createFlashcard: privateProcedure
+  .input(
+    z.object({
+      fileId: z.string(),
+      question: z.string(),
+      answer: z.string(),
+    })
+  )
+  .mutation(async ({ ctx, input }) => {
+    const { userId } = ctx
+
+    return await db.flashcard.create({
+      data: {
+        fileId: input.fileId,
+        userId,
+        question: input.question,
+        answer: input.answer,
+      },
+    })
+  }),
+
+updateFlashcard: privateProcedure
+  .input(
+    z.object({
+      id: z.string(),
+      question: z.string(),
+      answer: z.string(),
+    })
+  )
+  .mutation(async ({ ctx, input }) => {
+    const { userId } = ctx
+
+    const flashcard = await db.flashcard.findFirst({
+      where: { id: input.id, userId },
+    })
+    if (!flashcard) throw new TRPCError({ code: 'NOT_FOUND' })
+
+    return await db.flashcard.update({
+      where: { id: input.id },
+      data: {
+        question: input.question,
+        answer: input.answer,
+      },
+    })
+  }),
+
+
 })
 
 export type AppRouter = typeof appRouter

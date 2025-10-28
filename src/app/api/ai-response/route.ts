@@ -1,15 +1,19 @@
 import { db } from '@/db'
 import { gemini } from '@/lib/gemini'
 import { getPineconeClient } from '@/lib/pinecone'
-import { SendMessageValidator } from '@/lib/validators/SendMessageValidator'
 import { getKindeServerSession } from '@kinde-oss/kinde-auth-nextjs/server'
 import { GoogleGenerativeAIEmbeddings } from '@langchain/google-genai'
 import { PineconeStore } from '@langchain/pinecone'
 import { NextRequest } from 'next/server'
+import { z } from 'zod'
+
+const RequestValidator = z.object({
+  text: z.string(),
+  language: z.string(),
+  fileId: z.string(),
+})
 
 export const POST = async (req: NextRequest) => {
-  // endpoint for asking a question to a pdf file
-
   const body = await req.json()
 
   const { getUser } = getKindeServerSession()
@@ -20,8 +24,7 @@ export const POST = async (req: NextRequest) => {
   if (!userId)
     return new Response('Unauthorized', { status: 401 })
 
-  const { fileId, message } =
-    SendMessageValidator.parse(body)
+  const { text, language, fileId } = RequestValidator.parse(body)
 
   const file = await db.file.findFirst({
     where: {
@@ -30,21 +33,10 @@ export const POST = async (req: NextRequest) => {
     },
   })
 
-
-
   if (!file)
     return new Response('Not found', { status: 404 })
 
-  await db.message.create({
-    data: {
-      text: message,
-      isUserMessage: true,
-      userId,
-      fileId,
-    },
-  })
-
-  // 1: vectorize message
+  // 1: vectorize the selected text to get context
   const embeddings = new GoogleGenerativeAIEmbeddings({
     apiKey: process.env.GEMINI_API_KEY!,
     model: 'text-embedding-004',
@@ -61,89 +53,65 @@ export const POST = async (req: NextRequest) => {
     }
   )
 
-  const results = await vectorStore.similaritySearch(
-    message,
-    4
-  )
-  console.log('RAG results:', results.map(r => r.pageContent)) // <- Add this
+  const results = await vectorStore.similaritySearch(text, 3)
 
-
-  const prevMessages = await db.message.findMany({
-    where: {
-      fileId,
-    },
-    orderBy: {
-      createdAt: 'asc',
-    },
-    take: 6,
-  })
-
-const formattedPrevMessages = prevMessages.map((msg: typeof prevMessages[number]) => ({
-      role: msg.isUserMessage
-      ? ('user' as const)
-      : ('model' as const), // Changed from 'assistant' to 'model' for Gemini
-    content: msg.text,
-  }))
-
-  // Build the prompt for Gemini
   const contextText = results.map((r) => r.pageContent).join('\n\n')
-const conversationHistory = formattedPrevMessages.map((message: { role: 'user' | 'model'; content: string }) => {
-  if (message.role === 'user')
-    return `User: ${message.content}\n`
-  return `Assistant: ${message.content}\n`
-}).join('')
 
-  const prompt = `Use the following pieces of context (or previous conversation if needed) to answer the user's question in markdown format. If you don't know the answer, just say that you don't know, don't try to make up an answer.
+  // Get language name for better prompts
+  const languageNames: Record<string, string> = {
+    ar: 'Arabic',
+    en: 'English',
+    fr: 'French',
+    es: 'Spanish',
+    de: 'German',
+    it: 'Italian',
+    pt: 'Portuguese',
+    ru: 'Russian',
+    zh: 'Chinese',
+    ja: 'Japanese',
+  }
 
-----------------
+  const targetLanguageName = languageNames[language] || 'English'
 
-PREVIOUS CONVERSATION:
-${conversationHistory}
+  const prompt = `You are a helpful AI assistant and a flashcard generator , but you generate only te answer part, you have to consider he selected text as something needs to be explained, in order to generate an answer to it, our job to generate an answer of a flash card tat already have the selected text as a something need to be explained (question).
+   The user has selected the following text from a document and wants your help.
 
-----------------
+SELECTED TEXT:
+${text}
 
-CONTEXT:
+RELEVANT CONTEXT FROM DOCUMENT:
 ${contextText}
 
-USER INPUT: ${message}
+TASK:
+1. If the text needs translation, translate it to ${targetLanguageName}.
+2. If the text is a question or concept, provide a clear and concise explanation or answer in ${targetLanguageName}.
+3. If the text is a definition or term, explain it thoroughly in ${targetLanguageName}.
 
-Please provide a helpful response based on the context and conversation history.`
+Provide a helpful response that would be useful as a flashcard answer. Keep it concise but informative.
+give only the answer in 3 to 5 lines`
 
   const model = gemini.getGenerativeModel({ 
     model: 'gemini-2.0-flash',
     generationConfig: {
-      temperature: 0,
+      temperature: 0.3,
     }
   })
 
   try {
     const result = await model.generateContentStream(prompt)
     
-    // Create a readable stream for the response
     const encoder = new TextEncoder()
     const stream = new ReadableStream({
       async start(controller) {
-        let fullResponse = ''
-        
         try {
           for await (const chunk of result.stream) {
             const chunkText = chunk.text()
-            fullResponse += chunkText
             controller.enqueue(encoder.encode(chunkText))
           }
           
-          // Save the complete response to database
-          await db.message.create({
-            data: {
-              text: fullResponse,
-              isUserMessage: false,
-              fileId,
-              userId,
-            },
-          })
-          
           controller.close()
         } catch (error) {
+          console.error('Streaming error:', error)
           controller.error(error)
         }
       }

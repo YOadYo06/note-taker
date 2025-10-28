@@ -24,6 +24,7 @@ model User {
 
   File    File[]
   Message Message[]
+  Flashcard Flashcard[]
 
   stripeCustomerId       String?   @unique @map(name: "stripe_customer_id")
   stripeSubscriptionId   String?   @unique @map(name: "stripe_subscription_id")
@@ -47,6 +48,7 @@ model File {
   url      String
   key      String
   messages Message[]
+  flashcards Flashcard[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -59,6 +61,19 @@ model Message {
   text String @db.Text()
 
   isUserMessage Boolean
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  User      User?    @relation(fields: [userId], references: [id])
+  userId    String?
+  File      File?    @relation(fields: [fileId], references: [id])
+  fileId    String?
+}
+
+model Flashcard {
+  id        String   @id @default(cuid())
+  question  String   @db.Text()
+  answer    String   @db.Text()
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
